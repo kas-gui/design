@@ -1,7 +1,7 @@
 Title
 =====
 
--   Pull request: #1
+-   Pull request: [#1](https://github.com/kas-gui/design/pull/1)
 -   Other relevant links here
 
 **Scope:** a short description of scope of this document.
