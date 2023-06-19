@@ -90,6 +90,26 @@ Alternatives
 
 Probably <kbd>Tab</kbd>-navigation on a `ListView` should jump to the first visible item, not the first mapped item (which may be just outside the visible range). This is a small bug/TODO.
 
+### Alternate Tab-navigation style
+
+A short press of <kbd>Tab</kbd> or <kbd>Shift+Tab</kbd> behaves like usual. Holding <kbd>Tab</kbd> instead activates a special "navigation mode":
+
+- While <kbd>Tab</kbd> is held, focus is indicated via an extra box/highlight. Focus does not move (no key repeat).
+- <kbd>Tab+Esc</kbd> moves focus to the parent (or none)
+- <kbd>Tab</kbd> + arrow keys moves focus in the appropriate direction (requires a new method, `spatial_nav`)
+- <kbd>Tab</kbd> + <kbd>Home/kbd> or <kbd>End</kbd> moves focus to the first/last child of its container (possibly using event-handling's unwinding, i.e. the first ancestor to handle `TabHome` moves focus).
+- <kbd>Tab</kbd> + <kbd>PageUp/kbd> or <kbd>PageDown</kbd> moves focus within a container
+
+Advantage: if well implemented this might be intuitive and much easier to use, at least in some cases.
+
+Disadvantage: non-standard.
+
+Disadvantage: not trivial to implement (but should be viable).
+
+Disadvantage: it is possible that some widgets would be hard or impossible reach. A few cases might cause problems, e.g. floats (widgets on top of one another).
+
+### Mnemonics alternatives
+
 Possibly mnemonics should be supported by all labels instead of just `AccelLabel`.
 
 Mnemonics should be restricted to only visible widgets and not require registration. Proposal:
