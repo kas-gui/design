@@ -1,7 +1,7 @@
 Keyboard accessibility
 ======================
 
-- Pull request: TODO
+- Pull request: https://github.com/kas-gui/design/pull/4
 
 **Scope:** keyboard navigation, focus, mnemonics, shortcuts
 
