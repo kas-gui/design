@@ -1,11 +1,11 @@
 Widget input data
 =================
 
--   Pull request: TODO
+-   Pull request: https://github.com/kas-gui/design/pull/6
 
 **Scope:** ability to provide "input data" do widgets
 
-**Status:** merged
+**Status:** merged in [kas#396](https://github.com/kas-gui/kas/pull/396)
 
 
 Motivation
@@ -116,17 +116,22 @@ Unlike Xilem, input data is read-only. Like Iced, the only way a widget may act
 (other than adjusting its own state) is by passing a message; as in prior Kas
 versions any ancestor may handle the message.
 
-Like both Iced and Xilem, the user should never need to call *into* a widget
-(except standard widget methods); state management happens entirely through
+Like both Iced and Xilem, the user should not normally need to call methods on
+child widgets after construction; state management happens through
 input data, input events and output messages.
 
-### Aside: cached values and mutable data
+### Exceptions: cached values and messages to siblings
 
-Widgets sometimes need to cache a copy of some input value internally (e.g. for
-drawing) while also needing to return a message to update the data. In some
-cases this is both heavily redundant and a nuisance to use, e.g. if the
-Mandlebrot example's `alpha` and `delta` view parameters were input as user
-data, must be cached within the widget, and an updated copy sent via message.
+There are some exceptions not covered by the above premise:
+
+-   Sizing and drawing operations will not have access to "input data", hence
+    sometimes values must be cached within widget state.
+-   Communication with siblings is sometimes required, e.g. to set a filter on
+    a list from an input field. This design document does not provide a direct
+    method for this, though it can be achieved by copying the message to the
+    state of a mutual ancestor, then passing as input data. Methods used by
+    prior versions of Kas remain available, e.g. `Rc<RefCell<..>>` and calling
+    methods on children of a custom widget.
 
 Xilem's model (data passed by mutable reference) has an advantage here. The cost
 is requiring a complex strategy to determine which parts of the UI must be
@@ -140,17 +145,21 @@ difference between Kas's and Xilem's widget models.
 To keep widgets in sync with input data, we will add a new method,
 `Widget::update`, and a requirement that this is called at least once between
 any change to input data and calls to draw, resize or use event handlers on the
-widget.
+widget. For performance reasons, it is not required to call `update` on any
+hidden children, provided `update` is called when those children become visible
+(the `Stack` widget uses this approach).
 
-The obvious way to achieve this requirement is to call `update()` on the widget
-tree whenever data is updated via handling of a message. Some restrictions are
-possible, and may be added to a UI design as required: e.g. a widget which
-stores a hash or copy of input data and only propegates a call to `update`
-when this changes.
+We do not permit omitting a call to `update` where the data is `()` or is
+unchanged from the last call. Reasons: (1) widgets may derive state from the
+`ConfigMgr` instead, which may use `update` as a notification of change, and
+(2) some input widgets allow direct manipulation of their state before sending
+a message; a handler may determine that the input does not change any state and
+call `update` with the prior state to re-set all dependent widgets.
 
-Further, changes may often be localised: data may be stored anywhere in the
-widget tree, thus e.g. a counter or filterable view may be embedded in a UI,
-with local message handling requiring only that this sub-tree be updated.
+Any widget may use its own state as input data so long as it calls `update` on
+change to that data. For convenience, we provide a new widget, `Adapt`, which
+both stores state and accepts user-defined message handlers, calling `update`
+whenever any message is handled.
 
 
 Input data how?
@@ -268,7 +277,7 @@ The latter is the most important point here, so we will use an associated type.
 Data models
 -----------
 
-A key part of the motivation is to unify "normal" widgets with data model
+Part of the motivation for input data is to unify "normal" widgets with data model
 widgets like `ListView`. We can do this by requiring that the data passed into
 `ListView` supports `ListData`, then passing `ListData::Item` to its children.
 
@@ -369,39 +378,3 @@ For now, option (1) appears the most sensible: low disruption and achieving
 the goal of avoiding `unsafe`. Possibly (2) could be offered as an option but
 it makes little sense when the prior `unsafe_node` is already an option (unless
 that is determined to be unsound).
-
-
-Adjusting the input data type
------------------------------
-
-A key part of the design is that data may be embedded anywhere in the widget
-tree and passed around: thus, the `Data` type will not be a type parameter of
-the whole widget tree but of each individual node. This supports:
-
--   Data embedded at the root of the widget tree (the shell), plus
--   `Adapt`, embedding user-defined state anywhere in the user tree, and passing
-    this data down to its children (possibly in addition to data passed in to
-    the `Adapt` node itself
--   `WithAny`, a wrapper allowing nodes not using data (e.g. `Label`) to be used
-    anywhere that data is present.
-
-So, why support `Adapt` instead of locking the whole tree to a single data type?
-
--   A filtered list may be implemented as an adapter over a list using local
-    state to represent the filter.
--   Predefined components like "pop-up text editor" are possible without being
-    templated over the input data type *and* having a method mapping this to the
-    expected data type.
--   Components like a calculator can be defined as a self-contained compound
-    widget (slightly simpler and easier to embed in a larger UI).
-
-In short, it allows more composable UIs.
-
-(Note however the limitation mentioned in passing above: if "adapters" generate
-values for consumption, e.g. generating a `String` externally from a `Text`
-widget, the adapter must generate this value any time a `Node` API over `Text`
-is required, even though in many cases `Text` will not be consuming this value.
-Example: `nav_next` requires input data in some corner cases but not in the vast
-majority of implementations; do we generate values whenever calling this method
-or limit `ListView` which actually needs this? Significant adjustment of APIs
-would also be needed to avoid cloning generated values in various places.)
