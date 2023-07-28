@@ -264,7 +264,7 @@ or an associated type (sometimes bound to a type parameter of the struct):
 
 -   A type parameter would let `Label: Widget<T>` for any `T` without
     requiring `Label<T>`. This sounds nice, but in practice it's not a big
-    deal since `fn label(..) -> WithAny<A, Label>` is a viable alternative
+    deal since `fn label(..) -> MapAny<A, Label>` is a viable alternative
     (and layout macros can support string literals as `Label`s either way).
 -   An associated type allows e.g. `List<D: Directional, W: Widget>` instead of
     `List<A, D: Directional, W: Widget<A>>`. Not very significant.
@@ -346,7 +346,7 @@ impl<'a, T> Node<'a, T> {
 ```
 
 Problem: any part of the widget tree which changes the data type (`Adapt`,
-`WithAny`) would be unable to implement `get_child` returning the expected
+`MapAny`) would be unable to implement `get_child` returning the expected
 `Node` type. We need to remove that parameter `T` from `Node`.
 
 This is actually quite easy, if `T: Sized` and one is prepared to make certain
