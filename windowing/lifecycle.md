@@ -1,7 +1,7 @@
 Window state and lifecycle
 ==========================
 
--   Pull request: [#1](https://github.com/kas-gui/design/pull/1)
+-   Pull request: [#7](https://github.com/kas-gui/design/pull/7)
 
 **Scope:** window and widget state lifecycle
 
