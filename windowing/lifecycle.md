@@ -80,25 +80,66 @@ both data updates (`fn update)` and timer updates (`Event::TimerUpdate`). Such
 functionality is left to a future design document.
 
 
-Secondary windows
------------------
+Popups
+------
 
-All secondary windows have a parent window. They are positioned relative to a
-parent window, but may (depending on platform and implementation) exceed the
-bounds of the parent window (note: Winit does not yet fully support this).
+A popup (e.g. a menu or tooltip) is driven by a widget within a parent window.
+This implies that its state exists as long as the parent window does and that
+its input data is filtered through the parent window's UI tree.
 
-A secondary window is defined by a widget of the parent window. This widget will
-be resumed when the window is opened and suspended when the window is closed.
+### Emulated vs using the windowing system
 
-Multiple forms of secondary widget may be supported:
+All desktop platforms should have some form of support for such surfaces, e.g.
+Wayland has `wl_shell_surface::set_popup`. Unforunately Winit does not yet
+support this (issue #403).
 
--   A modal window which blocks input to its parent and may be positioned anywhere
--   A menu surface which is positioned precisely relative to its parent window
--   Emulations of the above which do not create new window surfaces
+Mobile platforms may not support such surfaces at all.
 
-To be defined: whether secondary windows have their own `EventState`.
-Potentially this struct must be split; it appears that at least some parts
-should be per secondary window.
+As a result we should support emulating such surfaces (with the restriction that
+the surface may not escape the bounds of the parent), but use window manager
+surfaces when available.
+
+Since only emulated popups are currently supported, it is yet to be determined
+what other changes will be required for window-manager provided popups.
+
+### Construction and state
+
+It is desirable by the current stateful widget model that a popup surface may
+be driven by an arbitrary widget in the tree of the parent window (using a
+widget excluded from layout).
+
+State: a popup has a `WindowId` only when open. A popup does not have its own
+`EventState`, `SolveCache` or theme state. It will need its own draw surface.
+
+Configuration and updates: this may happen along with the parent widget or only
+on usage. This may be affected by the state-retention model.
+
+Layout: sizing must happen no earlier than configuration and before first usage;
+likely it should happen when first opened. It could be repeated (and this might
+be required if configuration is repeated). The position should be set on each
+usage (at least if anything changes).
+
+
+Modal windows
+-------------
+
+Dialog boxes such as "Open File" are a form of modal window: one that on
+desktop platforms usually appears as an independent window, but which should
+block access to the parent window while open (for example, the user must
+choose a file to open or cancel this task before being able to interact with
+the parent window again).
+
+Some aspects of modal windows may be different to popups:
+
+-   The modal window could potentially appear on a different screen with a
+    different scale factor, thus may need independent theme window state.
+-   Some aspects of `EventState` are tied to the scale factor; others relate to
+    popups. A modal window should therefore have its own `EventState`.
+-   The modal window will need its own surface.
+
+Thus, in many ways a modal window is similar to a primary window.
+It is not yet determined whether a modal window should have state embedded
+within a parent window via a widget, though likely not.
 
 
 Widget lifecycle
@@ -121,6 +162,8 @@ New additions:
 -   Method `Events::suspend` is called on all widgets when the window is
     suspended. This method may (but is not required to) free resources and
     destroy transient children to save memory. Suspended widgets may not be
-    sized, drawn, or have their event handlers invoked.
+    sized, drawn, or have their event handlers invoked. Potentially (but not
+    necessarily) popups could be suspended when closed and `Stack` pages when
+    hidden; if so additional hints regarding resource usage may be desired.
 -   A widget may be resumed by configuring (`configure`, `update`) and sizing
     (at least `set_rect`). After this, drawing and event-handling may happen.
