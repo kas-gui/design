@@ -3,7 +3,7 @@ Keyboard accessibility
 
 - Pull request: https://github.com/kas-gui/design/pull/4
 
-**Scope:** keyboard navigation, focus, mnemonics, shortcuts
+**Scope:** keyboard navigation, focus, shortcuts
 
 **Status:** partial implementation
 
@@ -72,9 +72,7 @@ This is implemented, roughly as follows:
 Mnemonics
 ---------
 
-Mnemonics are supported by [`AccelString`](https://docs.rs/kas/latest/kas/text/struct.AccelString.html) used in [`AccelLabel`](https://docs.rs/kas/latest/kas/widgets/struct.AccelLabel.html).
-
-So far, mnemonics function by registering themselves during configure/init. All mnemonics in the current "page" are active. This is likely to change (see below).
+See [#8: Access Keys](https://github.com/kas-gui/design/pull/8).
 
 
 Shortcuts
@@ -107,14 +105,3 @@ Disadvantage: non-standard.
 Disadvantage: not trivial to implement (but should be viable).
 
 Disadvantage: it is possible that some widgets would be hard or impossible reach. A few cases might cause problems, e.g. floats (widgets on top of one another).
-
-### Mnemonics alternatives
-
-Possibly mnemonics should be supported by all labels instead of just `AccelLabel`.
-
-Mnemonics should be restricted to only visible widgets and not require registration. Proposal:
-
-- Add a method to iterate over all visible descendants
-- When any mnemonic key is pressed (<kbd>Alt</kbd> + letter/number), iterate over visible widgets to find a possible handler. This should be fast enough since the number of widgets visible on screen is typically quite limited. It fixes the current issue that a mnemonic from a different page of a `TabStack` could activate. It *might* need special casing for scrolling (e.g. if a menu or configuration page has to be scrolled).
-
-Alternative: mnemonics should show an underline whenever <kbd>Alt</kbd> is pressed; they could temporarily register themselves when this happens (as part of the draw call?). Probably not a good alternative.
