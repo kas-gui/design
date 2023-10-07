@@ -1,7 +1,7 @@
 WidgetId
 ========
 
--   Pull request: [#1](https://github.com/kas-gui/design/pull/1)
+-   Pull request: [#10](https://github.com/kas-gui/design/pull/10)
 -   Other relevant links here
 
 **Scope:** widget identifiers (paths)
